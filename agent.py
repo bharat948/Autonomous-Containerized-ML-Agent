@@ -16,6 +16,21 @@ def main():
         print("Error: The 'openai' library is not installed inside the container environment. Install it via pip first.", file=sys.stderr)
         sys.exit(1)
         
+    # Load system prompt from mounted directory
+    prompt_path = "/workspace/system_prompt.txt"
+    default_prompt = "You are a helpful assistant running inside an isolated Docker sandbox. Answer in one short sentence confirming your execution environment."
+    system_prompt = default_prompt
+    
+    if os.path.exists(prompt_path):
+        try:
+            with open(prompt_path, "r") as f:
+                system_prompt = f.read().strip()
+            print(f"Loaded system prompt from {prompt_path}", flush=True)
+        except Exception as e:
+            print(f"Warning: Could not read system prompt file: {e}", file=sys.stderr, flush=True)
+    else:
+        print("System prompt file not found, using default inline prompt.", flush=True)
+
     # Pick the available client
     if openai_key:
         print("Initializing LLM client using OpenAI URL...", flush=True)
@@ -35,10 +50,10 @@ def main():
         response = client.chat.completions.create(
             model=model,
             messages=[
-                {"role": "system", "content": "You are a helpful assistant running inside an isolated Docker sandbox. Answer in one short sentence confirming your execution environment."},
-				{"role": "user", "content": "Hello! Confirm you can read this message."}
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": "Hello! Confirm you can read this message."}
             ],
-            max_tokens=60
+            max_tokens=100
         )
         print("\n=== LLM Response ===", flush=True)
         print(response.choices[0].message.content, flush=True)
