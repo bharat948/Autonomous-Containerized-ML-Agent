@@ -1,0 +1,22 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Docker
+.docker/
+
+# Temporary / Local keys
+.env
+*.key
+*.pem
+credentials.json
+
+# Local tests
+test_mount_host.txt
