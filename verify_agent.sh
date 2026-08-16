@@ -18,10 +18,10 @@ docker exec "${CONTAINER_NAME}" pip install openai >/dev/null 2>&1 || true
 
 echo "Dependencies verified. Invoking containerized agent..."
 
-# 3. Invoke agent inside Docker (keys loaded from container environment)
+# 3. Invoke agent inside Docker (keys loaded from container environment, passing script arguments down)
 docker exec \
   "${CONTAINER_NAME}" \
-  python /workspace/agent.py
+  python /workspace/agent.py "$@"
 
 echo "=== Agent Verification Done ==="
 exit 0
