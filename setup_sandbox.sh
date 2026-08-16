@@ -11,25 +11,28 @@ if ! docker info >/dev/null 2>&1; then
     exit 1
 fi
 
-# Check if the container already exists
+# Stop and remove the existing container to ensure new environment variables from .env are loaded
 if docker ps -a --format '{{.Names}}' | grep -Eq "^${CONTAINER_NAME}\$"; then
-    # Check if it is running
-    if docker ps --format '{{.Names}}' | grep -Eq "^${CONTAINER_NAME}\$"; then
-        echo "Container '${CONTAINER_NAME}' is already running."
-        exit 0
-    else
-        echo "Starting existing stopped container '${CONTAINER_NAME}'..."
-        docker start ${CONTAINER_NAME}
-        exit 0
-    fi
+    echo "Stopping and removing existing '${CONTAINER_NAME}' to reload environment config..."
+    docker stop "${CONTAINER_NAME}" >/dev/null 2>&1 || true
+    docker rm "${CONTAINER_NAME}" >/dev/null 2>&1 || true
+fi
+
+ENV_ARG=""
+if [ -f "${WORKSPACE_DIR}/.env" ]; then
+    echo "Found .env file. Loading environment keys..."
+    ENV_ARG="--env-file ${WORKSPACE_DIR}/.env"
+else
+    echo "Warning: No .env file found at ${WORKSPACE_DIR}/.env"
 fi
 
 echo "Spinning up new container '${CONTAINER_NAME}' with image '${IMAGE_NAME}'..."
 docker run -d \
   --name "${CONTAINER_NAME}" \
+  ${ENV_ARG} \
   -v "${WORKSPACE_DIR}:/workspace" \
   -w "/workspace" \
   "${IMAGE_NAME}" \
   tail -f /dev/null
 
-echo "Container '${CONTAINER_NAME}' started successfully."
+echo "Container '${CONTAINER_NAME}' started successfully with mounted workspace."
