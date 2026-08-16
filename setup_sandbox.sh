@@ -22,14 +22,24 @@ ENV_ARG=""
 if [ -f "${WORKSPACE_DIR}/.env" ]; then
     echo "Found .env file. Loading environment keys..."
     ENV_ARG="--env-file ${WORKSPACE_DIR}/.env"
-else
-    echo "Warning: No .env file found at ${WORKSPACE_DIR}/.env"
+    
+    # Load HOST_PORT variables to host shell if defined in .env
+    export $(grep -E "^HOST_PORT_" "${WORKSPACE_DIR}/.env" | xargs)
 fi
 
+# Apply fallback defaults for ports if not explicitly defined
+HOST_PORT_JUPYTER=${HOST_PORT_JUPYTER:-8888}
+HOST_PORT_TENSORBOARD=${HOST_PORT_TENSORBOARD:-6006}
+HOST_PORT_API=${HOST_PORT_API:-8000}
+
+PORT_ARG="-p ${HOST_PORT_JUPYTER}:8888 -p ${HOST_PORT_TENSORBOARD}:6006 -p ${HOST_PORT_API}:8000"
+
 echo "Spinning up new container '${CONTAINER_NAME}' with image '${IMAGE_NAME}'..."
+echo "Exposing ports: Jupyter=${HOST_PORT_JUPYTER}, TensorBoard=${HOST_PORT_TENSORBOARD}, API=${HOST_PORT_API}"
 docker run -d \
   --name "${CONTAINER_NAME}" \
   ${ENV_ARG} \
+  ${PORT_ARG} \
   -v "${WORKSPACE_DIR}:/workspace" \
   -w "/workspace" \
   "${IMAGE_NAME}" \
