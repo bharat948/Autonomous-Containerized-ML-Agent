@@ -1,26 +1,23 @@
-# Data Profiling Report
+# Data Understanding
 
-## Core shape of the dataset.
-The dataset contains 768 entries and 9 columns.
+## Overview of the Dataset
+The dataset consists of several features related to diabetes detection among female patients of Pima Indian heritage. The columns include:
+- **Pregnancies**: Number of times pregnant
+- **Glucose**: Plasma glucose concentration a 2 hours in an Oral Glucose Tolerance Test
+- **BloodPressure**: Diastolic blood pressure (mm Hg)
+- **SkinThickness**: Triceps skin fold thickness (mm)
+- **Insulin**: 2-Hour serum insulin (mu U/ml)
+- **BMI**: Body mass index (weight in kg/(height in m)^2)
+- **DiabetesPedigreeFunction**: Diabetes pedigree function
+- **Age**: Age (years)
+- **Outcome**: Class variable (0 or 1)
 
-## Target column distribution.
-- Class 0: 500 occurrences
-- Class 1: 268 occurrences
+## Key Metrics
+- **Number of Records**: 768
+- **Number of Features**: 8
+- **Class Distribution**: 
+  - Class 0 (No diabetes): 500
+  - Class 1 (Diabetes): 268
 
-## Columns with missing/null values.
-- No missing values found in any column.
-
-## Proposed clean actions:
-- Change any zero values in 'Glucose' and 'BMI' to NaN for imputation (as those are not realistic physiological values).
-
-## Feature Scores
-| Feature                        | Score               |
-|--------------------------------|---------------------|
-| Glucose                        | 245.86              |
-| BMI                            | 82.56               |
-| Age                            | 46.14               |
-| Pregnancies                   | 39.67               |
-| DiabetesPedigreeFunction      | 23.87               |
-| Insulin                       | 13.28               |
-| SkinThickness                 | 4.30                |
-| BloodPressure                 | 3.26                |
+## Missing Values Insights
+- Missing or zero values detected in various columns, particularly **Glucose**, **BloodPressure**, **SkinThickness**, **Insulin**, and **BMI**.

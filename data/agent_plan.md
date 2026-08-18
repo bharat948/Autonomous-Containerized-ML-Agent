@@ -1,7 +1,11 @@
-# Execution Plan
-
-- [x] Data Profiling & EDA
-- [x] Preprocessing & Clean Dataset Creation
-- [x] Feature Engineering & Correlation Selection
-- [x] Model Architecture Trials & Parameter Tuning
-- [x] Champion Model Validation & Final Binary Export
+# Agent Plan
+- [x] Read goal and dataset
+- [x] Perform EDA on diabetes.csv
+- [x] Clean data (handle missing/zero values)
+- [x] Encode categorical features if any
+- [x] Scale features
+- [x] Train model (Random Forest or Gradient Boosting)
+- [x] Evaluate model using 5-Fold Cross-Validation Accuracy
+- [x] Save final model to /workspace/final_model.pkl
+- [x] Create inference script /workspace/predict.py
+- [x] Cleanup workspace

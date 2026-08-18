@@ -35,7 +35,6 @@ if [ -f "${REPO_DIR}/.env" ]; then
     echo "Found .env file. Loading environment keys..."
     ENV_FLAG="--env-file ${REPO_DIR}/.env"
     
-    # Read ports from .env or use defaults
     HOST_PORT_JUPYTER=$(grep -E '^HOST_PORT_JUPYTER=' "${REPO_DIR}/.env" | cut -d '=' -f2 || echo "8888")
     HOST_PORT_TENSORBOARD=$(grep -E '^HOST_PORT_TENSORBOARD=' "${REPO_DIR}/.env" | cut -d '=' -f2 || echo "6006")
     HOST_PORT_API=$(grep -E '^HOST_PORT_API=' "${REPO_DIR}/.env" | cut -d '=' -f2 || echo "8000")
@@ -46,14 +45,14 @@ else
     echo "Warning: No .env file found. Container will start without pre-loaded API keys."
 fi
 
-# 4. Spin up container with dual volume mounts:
-#    - User Data Directory -> /workspace (Read-Write)
-#    - Repo Agent Code -> /app (Read-Only)
+# 4. Spin up container with dual volume mounts and VENV PATH configuration
 echo "Spinning up new container '${CONTAINER_NAME}' with image '${IMAGE_NAME}'..."
 docker run -d \
   --name "${CONTAINER_NAME}" \
   ${ENV_FLAG} \
   ${PORT_FLAGS} \
+  -e PATH="/opt/venv/bin:/usr/local/bin:/usr/bin:/bin" \
+  -e VIRTUAL_ENV="/opt/venv" \
   -v "${DATA_DIR_ABS}":/workspace:rw \
   -v "${REPO_DIR}/agent.py":/app/agent.py:ro \
   -v "${REPO_DIR}/system_prompt.txt":/app/system_prompt.txt:ro \
@@ -61,5 +60,11 @@ docker run -d \
   "${IMAGE_NAME}" \
   tail -f /dev/null
 
-echo "Container '${CONTAINER_NAME}' started successfully."
+echo "Initializing Python virtual environment (/opt/venv)..."
+docker exec "${CONTAINER_NAME}" python -m venv /opt/venv
+
+echo "Pre-caching core ML dependencies (openai, pandas, scikit-learn, joblib, xgboost, lightgbm)..."
+docker exec "${CONTAINER_NAME}" /opt/venv/bin/pip install --quiet openai pandas scikit-learn joblib xgboost lightgbm numpy
+
+echo "Container '${CONTAINER_NAME}' ready with virtualenv /opt/venv."
 echo "Workspace: /workspace (RW) | App Code: /app (RO)"

@@ -23,17 +23,13 @@ if [ ! -d "${DATA_DIR}" ]; then
     mkdir -p "${DATA_DIR}"
 fi
 
-# 1. Initialize Sandbox with dual mounts (Workspace RW, App Code RO)
+# 1. Initialize Sandbox with dual mounts and virtualenv
 "${REPO_DIR}/setup_sandbox.sh" "${DATA_DIR}"
-
-# 2. Ensure python dependencies inside container
-echo "Ensuring container python dependencies (openai)..."
-docker exec sandbox-container pip install --quiet openai
 
 echo ""
 echo "=== Invoking Sandbox Agent ==="
 
-# 3. Execute agent inside container
+# 2. Execute agent inside container
 if [ -n "${PROMPT}" ]; then
     docker exec sandbox-container python /app/agent.py "${PROMPT}"
 else

@@ -28,9 +28,6 @@ fi
 # Ensure sandbox container is up with target dataset mounted
 "${REPO_DIR}/setup_sandbox.sh" "${DATA_DIR}" >/dev/null 2>&1
 
-# Ensure container python dependencies for inference
-docker exec sandbox-container pip install --quiet scikit-learn pandas joblib
-
 echo "=================================================="
 echo "   Containerized Model Inference Runner"
 echo "=================================================="

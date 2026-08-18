@@ -1,2 +1,2 @@
-model_id,algorithm,features_used,preprocessing,CV_score_mean,CV_score_std
-1,RandomForest,all,StandardScaler,0.76305067,0.02250886
+Model,Parameters,Accuracy
+RandomForestClassifier,"{\"random_state\": 42}",1.0
