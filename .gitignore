@@ -1,22 +1,23 @@
+# Environment keys & secrets
+.env
+
+# Python bytecode & cache
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.Python
-env/
+.pytest_cache/
+
+# Virtual environments
 venv/
 .venv/
-pip-log.txt
-pip-delete-this-directory.txt
+env/
 
-# Docker
-.docker/
+# IDE & Editor files
+.vscode/
+.idea/
+*.swp
 
-# Temporary / Local keys
-.env
-*.key
-*.pem
-credentials.json
-
-# Local tests
-test_mount_host.txt
+# OS generated
+.DS_Store
+Thumbs.db
