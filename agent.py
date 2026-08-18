@@ -1,20 +1,34 @@
 import os
 import sys
 import json
+import time
+import uuid
+import datetime
 import subprocess
-import shlex
 
-# List of forbidden command keywords/binaries for safety
+# Forbidden command binaries for security
 FORBIDDEN_COMMANDS = [
     "sudo", "su", "chmod", "chown", "iptables", "docker", "docker-compose",
     "nc", "netcat", "ncat", "ssh", "scp", "sftp", "ftp", "telnet",
     "mkfs", "dd", "shutdown", "reboot", "poweroff", "init"
 ]
 
-# Sensitive system files that must not be modified by agent tools
+# Sensitive control files that must not be modified by agent tools
 RESTRICTED_WRITE_FILES = [
-    "agent.py", "setup_sandbox.sh", "teardown.sh", "verify_agent.sh", "verify_sandbox.sh", ".env"
+    "agent.py", "setup_sandbox.sh", "teardown.sh", "verify_agent.sh", "verify_sandbox.sh", "run_agent.sh", ".env"
 ]
+
+# Model Pricing per 1M tokens USD
+MODEL_PRICING = {
+    "gpt-4o-mini": {"prompt": 0.15 / 1_000_000, "completion": 0.60 / 1_000_000},
+    "gemini-1.5-flash": {"prompt": 0.075 / 1_000_000, "completion": 0.30 / 1_000_000},
+    "default": {"prompt": 0.15 / 1_000_000, "completion": 0.60 / 1_000_000}
+}
+
+def calculate_step_cost(model_name: str, prompt_tokens: int, completion_tokens: int) -> float:
+    """Calculates USD cost for a given token usage."""
+    pricing = MODEL_PRICING.get(model_name.lower(), MODEL_PRICING["default"])
+    return (prompt_tokens * pricing["prompt"]) + (completion_tokens * pricing["completion"])
 
 def is_path_safe(file_path: str) -> (bool, str):
     """Normalizes path and checks whether it stays strictly inside /workspace."""
@@ -29,15 +43,12 @@ def is_command_safe(command: str) -> (bool, str):
     if not tokens:
         return False, "Error: Empty command provided."
     
-    # Check forbidden command binaries
     for forbidden in FORBIDDEN_COMMANDS:
         if forbidden in tokens or any(t.endswith("/" + forbidden) for t in tokens):
             return False, f"Error: Command rejected due to security policy. Token '{forbidden}' is forbidden."
             
-    # Check for direct modifications to agent core driver files
     for restricted in RESTRICTED_WRITE_FILES:
         if restricted in command:
-            # Block destructive redirects or modifications
             for op in [">", ">>", "rm", "mv", "cp"]:
                 if op in tokens:
                     return False, f"Error: Modifying control script '{restricted}' is restricted."
@@ -55,7 +66,6 @@ def read_workspace_file(file_path: str) -> str:
         if not os.path.exists(clean_path_or_err):
             return f"Error: File not found at path: {file_path}"
         with open(clean_path_or_err, "r", encoding="utf-8", errors="ignore") as f:
-            # Read up to 1MB to prevent memory or context overload
             content = f.read(1024 * 1024)
             return content
     except Exception as e:
@@ -73,7 +83,6 @@ def write_workspace_file(file_path: str, content: str) -> str:
         return f"Error: Modifying core system script '{filename}' is restricted."
 
     try:
-        # Create parent directories if needed
         os.makedirs(os.path.dirname(clean_path_or_err), exist_ok=True)
         with open(clean_path_or_err, "w", encoding="utf-8") as f:
             f.write(content)
@@ -82,7 +91,7 @@ def write_workspace_file(file_path: str, content: str) -> str:
         return f"Error writing file: {e}"
 
 def run_command_in_sandbox(command: str) -> str:
-    """Executes a shell command inside the /workspace directory within the sandbox container."""
+    """Executes a shell command inside /workspace directory within the sandbox container."""
     print(f"[TOOL RUN] Calling run_command_in_sandbox with command: '{command}'", flush=True)
     safe, err_msg = is_command_safe(command)
     if not safe:
@@ -115,7 +124,19 @@ def run_command_in_sandbox(command: str) -> str:
     except Exception as e:
         return f"Error executing command: {e}"
 
+def save_trace(trace_data: dict):
+    """Saves structured JSON trace to /workspace/agent_trace.json."""
+    try:
+        trace_path = "/workspace/agent_trace.json"
+        with open(trace_path, "w", encoding="utf-8") as f:
+            json.dump(trace_data, f, indent=2)
+    except Exception as e:
+        print(f"Warning: Could not write trace log: {e}", file=sys.stderr, flush=True)
+
 def main():
+    session_id = str(uuid.uuid4())
+    start_time_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    
     # Check env variables
     openai_key = os.environ.get("OPENAI_API_KEY")
     gemini_key = os.environ.get("GEMINI_API_KEY")
@@ -127,7 +148,7 @@ def main():
     try:
         from openai import OpenAI
     except ImportError:
-        print("Error: The 'openai' library is not installed inside the container environment. Install it via pip first.", file=sys.stderr)
+        print("Error: The 'openai' library is not installed inside the container environment.", file=sys.stderr)
         sys.exit(1)
         
     # Pick User Prompt from args or use default
@@ -136,22 +157,21 @@ def main():
     else:
         user_prompt = "Read the goal from goal.txt and execute the task steps to build, evaluate, and save the ML model."
 
-    # Load system prompt from mounted directory
-    prompt_path = "/workspace/system_prompt.txt"
-    default_prompt = "You are a helpful assistant running inside an isolated Docker sandbox."
-    system_prompt = default_prompt
+    # Load system prompt from /app/system_prompt.txt (or fallback to /workspace/system_prompt.txt)
+    prompt_paths = ["/app/system_prompt.txt", "/workspace/system_prompt.txt"]
+    system_prompt = "You are a helpful assistant running inside an isolated Docker sandbox."
     
-    if os.path.exists(prompt_path):
-        try:
-            with open(prompt_path, "r") as f:
-                system_prompt = f.read().strip()
-            print(f"Loaded system prompt from {prompt_path}", flush=True)
-        except Exception as e:
-            print(f"Warning: Could not read system prompt file: {e}", file=sys.stderr, flush=True)
-    else:
-        print("System prompt file not found, using default inline prompt.", flush=True)
+    for p_path in prompt_paths:
+        if os.path.exists(p_path):
+            try:
+                with open(p_path, "r") as f:
+                    system_prompt = f.read().strip()
+                print(f"Loaded system prompt from {p_path}", flush=True)
+                break
+            except Exception as e:
+                print(f"Warning: Could not read system prompt file at {p_path}: {e}", file=sys.stderr, flush=True)
 
-    # Pick the available client
+    # Pick client model
     if openai_key:
         print("Initializing LLM client using OpenAI URL...", flush=True)
         client = OpenAI(api_key=openai_key)
@@ -170,7 +190,7 @@ def main():
             "type": "function",
             "function": {
                 "name": "read_workspace_file",
-                "description": "Reads the text contents of a file inside the /workspace directory.",
+                "description": "Reads the text contents of a file inside /workspace.",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -208,7 +228,7 @@ def main():
             "type": "function",
             "function": {
                 "name": "run_command_in_sandbox",
-                "description": "Executes a shell command (e.g., 'python train.py' or 'pip install scikit-learn') in /workspace.",
+                "description": "Executes a shell command (e.g., 'python train.py') in /workspace.",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -228,15 +248,32 @@ def main():
         {"role": "user", "content": user_prompt}
     ]
     
+    trace_data = {
+        "session_id": session_id,
+        "start_time": start_time_iso,
+        "end_time": None,
+        "model": model,
+        "user_prompt": user_prompt,
+        "total_steps": 0,
+        "total_tokens": {
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "total_tokens": 0
+        },
+        "total_cost_usd": 0.0,
+        "steps": []
+    }
+
     print(f"Prompt: \"{user_prompt}\"", flush=True)
     print(f"Calling LLM model '{model}' with tool support...", flush=True)
     
-    # Execution Reasoning Loop
     step_count = 0
-    max_steps = 30  # Guard against infinite loop
+    max_steps = 30
     
     while step_count < max_steps:
         step_count += 1
+        step_start_time = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        
         try:
             response = client.chat.completions.create(
                 model=model,
@@ -246,11 +283,39 @@ def main():
             )
         except Exception as e:
             print(f"Error calling LLM: {e}", file=sys.stderr, flush=True)
+            trace_data["end_time"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
+            save_trace(trace_data)
             sys.exit(1)
             
         message = response.choices[0].message
         
-        # Check if the model wants to call tools
+        # Token extraction
+        usage = getattr(response, "usage", None)
+        p_tokens = usage.prompt_tokens if usage else 0
+        c_tokens = usage.completion_tokens if usage else 0
+        t_tokens = usage.total_tokens if usage else (p_tokens + c_tokens)
+        
+        step_cost = calculate_step_cost(model, p_tokens, c_tokens)
+        
+        # Update metrics accumulator
+        trace_data["total_tokens"]["prompt_tokens"] += p_tokens
+        trace_data["total_tokens"]["completion_tokens"] += c_tokens
+        trace_data["total_tokens"]["total_tokens"] += t_tokens
+        trace_data["total_cost_usd"] += step_cost
+        trace_data["total_steps"] = step_count
+        
+        step_trace = {
+            "step_number": step_count,
+            "timestamp": step_start_time,
+            "prompt_tokens": p_tokens,
+            "completion_tokens": c_tokens,
+            "total_tokens": t_tokens,
+            "step_cost_usd": round(step_cost, 6),
+            "tool_calls": [],
+            "tool_results": [],
+            "llm_text_response": message.content if message.content else None
+        }
+        
         if message.tool_calls:
             messages.append(message)
             
@@ -260,6 +325,12 @@ def main():
                     func_args = json.loads(tool_call.function.arguments)
                 except Exception:
                     func_args = {}
+                
+                step_trace["tool_calls"].append({
+                    "id": tool_call.id,
+                    "name": func_name,
+                    "arguments": func_args
+                })
                 
                 if func_name == "read_workspace_file":
                     tool_result = read_workspace_file(func_args.get("file_path", ""))
@@ -273,19 +344,40 @@ def main():
                 else:
                     tool_result = f"Error: Tool '{func_name}' not recognized."
                     
+                step_trace["tool_results"].append({
+                    "id": tool_call.id,
+                    "name": func_name,
+                    "result_preview": str(tool_result)[:300]
+                })
+                
                 messages.append({
                     "role": "tool",
                     "tool_call_id": tool_call.id,
                     "name": func_name,
                     "content": str(tool_result)
                 })
+                
+            trace_data["steps"].append(step_trace)
+            save_trace(trace_data)
             continue
         else:
-            # Final response
-            print("\n=== LLM Response ===", flush=True)
+            trace_data["steps"].append(step_trace)
+            trace_data["end_time"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
+            save_trace(trace_data)
+            
+            print("\n=== LLM Final Response ===", flush=True)
             print(message.content, flush=True)
-            print("====================\n", flush=True)
-            print(f"Completed execution in {step_count} step(s).")
+            print("===========================\n", flush=True)
+            
+            print("=== Token & Cost Summary ===", flush=True)
+            print(f"Model:             {model}", flush=True)
+            print(f"Total Steps:       {step_count}", flush=True)
+            print(f"Prompt Tokens:     {trace_data['total_tokens']['prompt_tokens']:,}", flush=True)
+            print(f"Completion Tokens: {trace_data['total_tokens']['completion_tokens']:,}", flush=True)
+            print(f"Total Tokens:      {trace_data['total_tokens']['total_tokens']:,}", flush=True)
+            print(f"Estimated Cost:    ${trace_data['total_cost_usd']:.6f} USD", flush=True)
+            print(f"Trace Log Saved:   /workspace/agent_trace.json", flush=True)
+            print("===========================\n", flush=True)
             break
 
 if __name__ == "__main__":

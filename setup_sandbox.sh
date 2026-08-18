@@ -1,48 +1,65 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -e
 
 CONTAINER_NAME="sandbox-container"
 IMAGE_NAME="python:3.11-slim"
-WORKSPACE_DIR="/home/bharat/explore"
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DATA_DIR="${1:-$REPO_DIR/data}"
 
-echo "Checking if Docker is running..."
+# Ensure DATA_DIR exists as absolute path
+mkdir -p "${DATA_DIR}"
+DATA_DIR_ABS="$(cd "${DATA_DIR}" && pwd)"
+
+echo "=== Setting up TDD Sandbox Container ==="
+echo "Repo Directory: ${REPO_DIR}"
+echo "Data Workspace Directory: ${DATA_DIR_ABS}"
+
+# 1. Check if docker daemon is running
 if ! docker info >/dev/null 2>&1; then
-    echo "Error: Docker daemon is not running. Please start Docker."
+    echo "Error: Docker service is not running or accessible. Please start Docker Desktop/Daemon." >&2
     exit 1
 fi
 
-# Stop and remove the existing container to ensure new environment variables from .env are loaded
-if docker ps -a --format '{{.Names}}' | grep -Eq "^${CONTAINER_NAME}\$"; then
-    echo "Stopping and removing existing '${CONTAINER_NAME}' to reload environment config..."
+# 2. Check if container exists and stop/remove it to ensure fresh mount config
+if docker ps -a --format '{{.Names}}' | grep -wq "${CONTAINER_NAME}"; then
+    echo "Stopping and removing existing '${CONTAINER_NAME}' to reload environment and mount config..."
     docker stop "${CONTAINER_NAME}" >/dev/null 2>&1 || true
     docker rm "${CONTAINER_NAME}" >/dev/null 2>&1 || true
 fi
 
-ENV_ARG=""
-if [ -f "${WORKSPACE_DIR}/.env" ]; then
+# 3. Port mapping configuration (loaded from .env if present)
+PORT_FLAGS=""
+ENV_FLAG=""
+
+if [ -f "${REPO_DIR}/.env" ]; then
     echo "Found .env file. Loading environment keys..."
-    ENV_ARG="--env-file ${WORKSPACE_DIR}/.env"
+    ENV_FLAG="--env-file ${REPO_DIR}/.env"
     
-    # Load HOST_PORT variables to host shell if defined in .env
-    export $(grep -E "^HOST_PORT_" "${WORKSPACE_DIR}/.env" | xargs)
+    # Read ports from .env or use defaults
+    HOST_PORT_JUPYTER=$(grep -E '^HOST_PORT_JUPYTER=' "${REPO_DIR}/.env" | cut -d '=' -f2 || echo "8888")
+    HOST_PORT_TENSORBOARD=$(grep -E '^HOST_PORT_TENSORBOARD=' "${REPO_DIR}/.env" | cut -d '=' -f2 || echo "6006")
+    HOST_PORT_API=$(grep -E '^HOST_PORT_API=' "${REPO_DIR}/.env" | cut -d '=' -f2 || echo "8000")
+    
+    PORT_FLAGS="-p ${HOST_PORT_JUPYTER:-8888}:8888 -p ${HOST_PORT_TENSORBOARD:-6006}:6006 -p ${HOST_PORT_API:-8000}:8000"
+    echo "Exposing ports: Jupyter=${HOST_PORT_JUPYTER:-8888}, TensorBoard=${HOST_PORT_TENSORBOARD:-6006}, API=${HOST_PORT_API:-8000}"
+else
+    echo "Warning: No .env file found. Container will start without pre-loaded API keys."
 fi
 
-# Apply fallback defaults for ports if not explicitly defined
-HOST_PORT_JUPYTER=${HOST_PORT_JUPYTER:-8888}
-HOST_PORT_TENSORBOARD=${HOST_PORT_TENSORBOARD:-6006}
-HOST_PORT_API=${HOST_PORT_API:-8000}
-
-PORT_ARG="-p ${HOST_PORT_JUPYTER}:8888 -p ${HOST_PORT_TENSORBOARD}:6006 -p ${HOST_PORT_API}:8000"
-
+# 4. Spin up container with dual volume mounts:
+#    - User Data Directory -> /workspace (Read-Write)
+#    - Repo Agent Code -> /app (Read-Only)
 echo "Spinning up new container '${CONTAINER_NAME}' with image '${IMAGE_NAME}'..."
-echo "Exposing ports: Jupyter=${HOST_PORT_JUPYTER}, TensorBoard=${HOST_PORT_TENSORBOARD}, API=${HOST_PORT_API}"
 docker run -d \
   --name "${CONTAINER_NAME}" \
-  ${ENV_ARG} \
-  ${PORT_ARG} \
-  -v "${WORKSPACE_DIR}:/workspace" \
-  -w "/workspace" \
+  ${ENV_FLAG} \
+  ${PORT_FLAGS} \
+  -v "${DATA_DIR_ABS}":/workspace:rw \
+  -v "${REPO_DIR}/agent.py":/app/agent.py:ro \
+  -v "${REPO_DIR}/system_prompt.txt":/app/system_prompt.txt:ro \
+  -w /workspace \
   "${IMAGE_NAME}" \
   tail -f /dev/null
 
-echo "Container '${CONTAINER_NAME}' started successfully with mounted workspace."
+echo "Container '${CONTAINER_NAME}' started successfully."
+echo "Workspace: /workspace (RW) | App Code: /app (RO)"
