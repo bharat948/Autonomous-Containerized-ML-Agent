@@ -1,22 +1,26 @@
 # Data Profiling Report
 
-## Core shape of the dataset:
-- Rows: 891, Columns: 10
+## Core shape of the dataset.
+The dataset contains 768 entries and 9 columns.
 
-## Target column distribution:
-- Survived: 
-  - 0: 549 instances
-  - 1: 342 instances
+## Target column distribution.
+- Class 0: 500 occurrences
+- Class 1: 268 occurrences
 
-## Columns with missing/null values:
-- None. All missing values have been handled.
+## Columns with missing/null values.
+- No missing values found in any column.
 
 ## Proposed clean actions:
-- None. The dataset is now clean.
+- Change any zero values in 'Glucose' and 'BMI' to NaN for imputation (as those are not realistic physiological values).
 
-## Additional insights:
-- Numerical columns:
-  - Age: Mean: 29.36, Std: 13.02
-  - Fare: Mean: 32.20, Std: 49.69
-- Categorical columns:
-  - pclass, sex, embarked need encoding for model training.
+## Feature Scores
+| Feature                        | Score               |
+|--------------------------------|---------------------|
+| Glucose                        | 245.86              |
+| BMI                            | 82.56               |
+| Age                            | 46.14               |
+| Pregnancies                   | 39.67               |
+| DiabetesPedigreeFunction      | 23.87               |
+| Insulin                       | 13.28               |
+| SkinThickness                 | 4.30                |
+| BloodPressure                 | 3.26                |

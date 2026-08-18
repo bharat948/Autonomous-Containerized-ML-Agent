@@ -1,0 +1,6 @@
+Task: Tabular ML Classification
+Dataset: titanic.csv
+Target Column: survived
+Evaluation Metric: 5-Fold Cross-Validation Accuracy
+Goal: Analyze the features in titanic.csv, clean any missing values, perform appropriate feature encoding, select the most relevant variables, and train a traditional machine learning classifier (e.g., Random Forest or XGBoost) to maximize prediction accuracy of passenger survival.
+Output: Cleaned data and the final trained model binary must be saved to /workspace.

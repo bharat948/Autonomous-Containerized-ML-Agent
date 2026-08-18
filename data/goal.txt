@@ -1,6 +1,6 @@
 Task: Tabular ML Classification
-Dataset: titanic.csv
-Target Column: survived
+Dataset: diabetes.csv
+Target Column: Outcome
 Evaluation Metric: 5-Fold Cross-Validation Accuracy
-Goal: Analyze the features in titanic.csv, clean any missing values, perform appropriate feature encoding, select the most relevant variables, and train a traditional machine learning classifier (e.g., Random Forest or XGBoost) to maximize prediction accuracy of passenger survival.
+Goal: Analyze the features in diabetes.csv, clean any missing/zero values where appropriate (e.g., zero glucose or BMI), perform feature scaling/encoding, select the most relevant variables, and train a traditional machine learning classifier (e.g., Random Forest or Gradient Boosting) to maximize prediction accuracy of diabetes outcome.
 Output: Cleaned data and the final trained model binary must be saved to /workspace.
