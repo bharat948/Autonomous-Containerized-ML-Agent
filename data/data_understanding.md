@@ -1,23 +1,40 @@
-# Data Understanding
+# Data Understanding for Diabetes Dataset
 
-## Overview of the Dataset
-The dataset consists of several features related to diabetes detection among female patients of Pima Indian heritage. The columns include:
-- **Pregnancies**: Number of times pregnant
-- **Glucose**: Plasma glucose concentration a 2 hours in an Oral Glucose Tolerance Test
-- **BloodPressure**: Diastolic blood pressure (mm Hg)
-- **SkinThickness**: Triceps skin fold thickness (mm)
-- **Insulin**: 2-Hour serum insulin (mu U/ml)
-- **BMI**: Body mass index (weight in kg/(height in m)^2)
-- **DiabetesPedigreeFunction**: Diabetes pedigree function
-- **Age**: Age (years)
-- **Outcome**: Class variable (0 or 1)
+## Dataset Overview
+- **Shape**: (768, 9)
+- **Feature Names**: ['Pregnancies', 'Glucose', 'BloodPressure', 'SkinThickness', 'Insulin', 'BMI', 'DiabetesPedigreeFunction', 'Age', 'Outcome']
+- **Dtypes**:
+  - Numeric: float64, int64
 
-## Key Metrics
-- **Number of Records**: 768
-- **Number of Features**: 8
-- **Class Distribution**: 
-  - Class 0 (No diabetes): 500
-  - Class 1 (Diabetes): 268
+## Missing Values
+- **Count of Missing Values**:
+  - Glucose: 5
+  - BloodPressure: 35
+  - SkinThickness: 227
+  - Insulin: 374
+  - BMI: 11
 
-## Missing Values Insights
-- Missing or zero values detected in various columns, particularly **Glucose**, **BloodPressure**, **SkinThickness**, **Insulin**, and **BMI**.
+## Unique Values in Target 'Outcome'
+- **Unique Values**: [0, 1] (2 classes)
+- **Distribution**:
+  - Class 0: 500
+  - Class 1: 268
+
+## Distribution Check
+- The target shows some imbalance, but there are 2 classes available. No further action is needed on the target.
+
+## Feature Analysis
+- **Numeric Feature Basic Stats**:
+  - Mean, Median, Std, Min, Max for all numeric features.
+- **Skewness**:
+  - Examine each feature for skewness and potential transforms if needed.
+
+## Categorical Features
+- **Cardinality**: There are no categorical features present in the dataset.
+
+## Correlation Analysis
+- **Correlation Matrix**: Check for highly correlated features.
+- **Documentation of Features with High Correlation** with a documented threshold.
+
+## Feature-to-Target Relationship
+- **Pairs Analysis**: Analyze relationships without leaking target information.

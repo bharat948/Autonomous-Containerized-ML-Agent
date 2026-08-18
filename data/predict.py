@@ -1,27 +1,33 @@
+import joblib
+import pandas as pd
 import sys
 import json
-import pandas as pd
-from sklearn.preprocessing import StandardScaler
-from joblib import load
 
 # Load the model
-model = load('final_model.pkl')
+model = joblib.load('final_model.pkl')
 
-# Function to preprocess input
-def preprocess(input_data):
-    # Convert input JSON to DataFrame
-    df = pd.DataFrame([input_data])
-    scaler = StandardScaler()
-    df[df.columns] = scaler.fit_transform(df[df.columns])
-    return df
+# Input validation function
+def validate_input(data):
+    required_fields = ['Pregnancies', 'Glucose', 'BloodPressure', 'SkinThickness', 'Insulin', 'BMI', 'DiabetesPedigreeFunction', 'Age']
+    for field in required_fields:
+        if field not in data:
+            raise ValueError(f'Missing field: {field}')
 
+# Main prediction function
 if __name__ == '__main__':
-    input_json = json.loads(sys.argv[1])
-    processed_data = preprocess(input_json)
-    prediction = model.predict(processed_data)
-    probability = model.predict_proba(processed_data)
+    # Input data from command line argument
+    input_data = json.loads(sys.argv[1])
+    validate_input(input_data)
+
+    # Prepare input for prediction
+    input_df = pd.DataFrame([input_data])
+    # Make prediction
+    prediction = model.predict(input_df)
+    prediction_proba = model.predict_proba(input_df)
+
+    # Output prediction
     result = {
         'prediction': int(prediction[0]),
-        'probability': probability.max()
+        'probability': prediction_proba[0].tolist()
     }
     print(json.dumps(result))

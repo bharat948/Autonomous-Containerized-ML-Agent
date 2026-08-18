@@ -30,14 +30,14 @@ def calculate_step_cost(model_name: str, prompt_tokens: int, completion_tokens: 
     pricing = MODEL_PRICING.get(model_name.lower(), MODEL_PRICING["default"])
     return (prompt_tokens * pricing["prompt"]) + (completion_tokens * pricing["completion"])
 
-def is_path_safe(file_path: str) -> (bool, str):
+def is_path_safe(file_path: str) -> tuple[bool, str]:
     """Normalizes path and checks whether it stays strictly inside /workspace."""
     clean_path = os.path.normpath(os.path.join("/workspace", file_path.lstrip("/")))
     if not clean_path.startswith("/workspace"):
         return False, "Error: Access denied. Path must remain inside /workspace directory."
     return True, clean_path
 
-def is_command_safe(command: str) -> (bool, str):
+def is_command_safe(command: str) -> tuple[bool, str]:
     """Validates command string against forbidden binaries and risky operations."""
     tokens = command.strip().split()
     if not tokens:
@@ -54,6 +54,14 @@ def is_command_safe(command: str) -> (bool, str):
                     return False, f"Error: Modifying control script '{restricted}' is restricted."
 
     return True, ""
+
+def trim_tool_output(content: str, max_chars: int = 10000) -> str:
+    """Helper to trim massive tool output before appending to LLM memory."""
+    if len(content) <= max_chars:
+        return content
+    half = max_chars // 2
+    truncated_msg = f"\n\n... [TRUNCATED {len(content) - max_chars} CHARACTERS FOR CONTEXT CONSERVATION. Original length: {len(content)}] ...\n\n"
+    return content[:half] + truncated_msg + content[-half:]
 
 def read_workspace_file(file_path: str) -> str:
     """Reads the contents of a file relative to the /workspace directory."""
@@ -274,6 +282,33 @@ def main():
         step_count += 1
         step_start_time = datetime.datetime.now(datetime.timezone.utc).isoformat()
         
+        # Reinforce system prompt with goal and plan state if they exist
+        goal_content = ""
+        if os.path.exists("/workspace/goal.txt"):
+            try:
+                with open("/workspace/goal.txt", "r", encoding="utf-8") as f:
+                    goal_content = f.read().strip()
+            except Exception:
+                pass
+
+        plan_content = ""
+        if os.path.exists("/workspace/agent_plan.md"):
+            try:
+                with open("/workspace/agent_plan.md", "r", encoding="utf-8") as f:
+                    plan_content = f.read().strip()
+            except Exception:
+                pass
+
+        reinforced_prompt = system_prompt
+        if goal_content or plan_content:
+            reinforced_prompt += "\n\n## CURRENT STATE & TARGET REINFORCEMENT"
+            if goal_content:
+                reinforced_prompt += f"\n### TARGET OBJECTIVE (from goal.txt):\n{goal_content}"
+            if plan_content:
+                reinforced_prompt += f"\n### CURRENT AGENT PLAN STATE (from agent_plan.md):\n{plan_content}"
+        
+        messages[0]["content"] = reinforced_prompt
+
         try:
             response = client.chat.completions.create(
                 model=model,
@@ -354,7 +389,7 @@ def main():
                     "role": "tool",
                     "tool_call_id": tool_call.id,
                     "name": func_name,
-                    "content": str(tool_result)
+                    "content": trim_tool_output(str(tool_result))
                 })
                 
             trace_data["steps"].append(step_trace)

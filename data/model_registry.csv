@@ -1,2 +1,2 @@
-Model,Parameters,Accuracy
-RandomForestClassifier,"{\"random_state\": 42}",1.0
+run_id,timestamp,task_type,model_family,estimator,feature_configuration,preprocessing_summary,parameters,tuning_status,folds,primary_metric,CV_mean_std,holdout_metric,seed,notes
+1,2023-10-12,class,RandomForest,RandomForestClassifier,numeric,StandardScaler,{'random_state': 42},None,5,accuracy,0.7597,0.7597,42,Initial training with cleaned data.
