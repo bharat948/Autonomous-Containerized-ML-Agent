@@ -1,6 +1,10 @@
-Task: Tabular ML Classification
-Dataset: diabetes.csv
-Target Column: Outcome
-Evaluation Metric: 5-Fold Cross-Validation Accuracy
-Goal: Analyze the features in diabetes.csv, clean any missing/zero values where appropriate (e.g., zero glucose or BMI), perform feature scaling/encoding, select the most relevant variables, and train a traditional machine learning classifier (e.g., Random Forest or Gradient Boosting) to maximize prediction accuracy of diabetes outcome.
-Output: Cleaned data and the final trained model binary must be saved to /workspace.
+Build a binary classification model to predict customer churn based on `/workspace/customer_churn.csv`.
+
+Key constraints:
+1. Target column is 'Churn' (Yes / No).
+2. 'customerID' is an identifier and should be removed.
+3. Keep preprocessing strictly leakage-safe using a scikit-learn Pipeline and ColumnTransformer. Note that 'TotalCharges' contains empty spaces " " which must be converted to NaN and imputed properly.
+4. Try a baseline and at least three model families: Linear (e.g. LogisticRegression), Bagged trees (e.g. RandomForest), and Boosting (e.g. HistGradientBoosting/XGBoost).
+5. Track primary metrics (5-fold Stratified CV F1-score and ROC-AUC) across families.
+6. Tune hyperparameters on the best model family via RandomizedSearchCV.
+7. Export 'final_model.pkl', validation reports, 'predict.py' inference entrypoint, and perform complete self-cleanup of intermediate data splits.

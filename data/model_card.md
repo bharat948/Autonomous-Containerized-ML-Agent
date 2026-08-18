@@ -1,23 +1,25 @@
-# Model Card for Diabetes Outcome Classification Model
+# Model Card for Customer Churn Prediction Model
 
 ## Model Details
-- **Model Type**: Random Forest Classifier
-- **Training Data**: Derived from diabetes.csv
+- **Model Type:** Random Forest Classifier
+- **Version:** 1.0
 
 ## Input Schema
-- **Features**:
-  - Pregnancies: int
-  - Glucose: int
-  - BloodPressure: int
-  - SkinThickness: int
-  - Insulin: int
-  - BMI: float
-  - DiabetesPedigreeFunction: float
-  - Age: int
+- **Features:**
+  - Categorical: Includes gender, Partner, Dependents, PhoneService, etc.
+  - Numerical: Includes SeniorCitizen, tenure, MonthlyCharges, TotalCharges.
 
-## Metrics
-- **Evaluation Metric**: Accuracy
-- **Training Accuracy**: 1.0 (100%)
+## Training Data
+- **Size:** 7043 records
+- **Target Distribution:** 73.4% No, 26.6% Yes
+
+## Evaluation Metrics
+- **F1 Score (Holdout Set):** 0.59 (for Yes)
+- **Overall Accuracy:** 80%
+- **ROC AUC (Cross-Validation):** 0.8216
 
 ## Limitations
-Has a perfect classification on the holdout dataset; further validation is necessary to avoid overfitting.
+- The model has shown bias towards the majority class (No). Further improvement may be needed in predicting the minority class (Yes).
+
+## Training Data Assumptions
+- The training data is assumed to be representative of the problem domain, capturing the relevant features for predicting customer churn.

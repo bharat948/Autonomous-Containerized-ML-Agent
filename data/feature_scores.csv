@@ -1,9 +1,0 @@
-Feature,Importance
-Pregnancies,0.1
-Glucose,0.2
-BloodPressure,0.1
-SkinThickness,0.1
-Insulin,0.1
-BMI,0.1
-DiabetesPedigreeFunction,0.1
-Age,0.1

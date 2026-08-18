@@ -1,40 +1,47 @@
-# Data Understanding for Diabetes Dataset
+# Data Understanding Report for Customer Churn Dataset
 
-## Dataset Overview
-- **Shape**: (768, 9)
-- **Feature Names**: ['Pregnancies', 'Glucose', 'BloodPressure', 'SkinThickness', 'Insulin', 'BMI', 'DiabetesPedigreeFunction', 'Age', 'Outcome']
-- **Dtypes**:
-  - Numeric: float64, int64
+## Shape and Data Types
+- Shape: (7043, 21)
+- Features: customerID, gender, SeniorCitizen, Partner, Dependents, tenure, PhoneService, MultipleLines, InternetService, OnlineSecurity, OnlineBackup, DeviceProtection, TechSupport, StreamingTV, StreamingMovies, Contract, PaperlessBilling, PaymentMethod, MonthlyCharges, TotalCharges, Churn
+- Data Types:
+  - int64: SeniorCitizen, tenure
+  - float64: MonthlyCharges
+  - str: gender, Partner, Dependents, PhoneService, MultipleLines, InternetService, OnlineSecurity, OnlineBackup, DeviceProtection, TechSupport, StreamingTV, StreamingMovies, Contract, PaperlessBilling, PaymentMethod, Churn, TotalCharges
 
 ## Missing Values
-- **Count of Missing Values**:
-  - Glucose: 5
-  - BloodPressure: 35
-  - SkinThickness: 227
-  - Insulin: 374
-  - BMI: 11
+- No missing values detected:
+  - gender: 0
+  - SeniorCitizen: 0
+  - Partner: 0
+  - Dependents: 0
+  - tenure: 0
+  - PhoneService: 0
+  - MultipleLines: 0
+  - InternetService: 0
+  - OnlineSecurity: 0
+  - OnlineBackup: 0
+  - DeviceProtection: 0
+  - TechSupport: 0
+  - StreamingTV: 0
+  - StreamingMovies: 0
+  - Contract: 0
+  - PaperlessBilling: 0
+  - PaymentMethod: 0
+  - MonthlyCharges: 0
+  - TotalCharges: 0
+  - Churn: 0
 
-## Unique Values in Target 'Outcome'
-- **Unique Values**: [0, 1] (2 classes)
-- **Distribution**:
-  - Class 0: 500
-  - Class 1: 268
+## Target Distribution
+- Churn distribution:
+  - No: 5174 (73.4%)
+  - Yes: 1869 (26.6%)
 
-## Distribution Check
-- The target shows some imbalance, but there are 2 classes available. No further action is needed on the target.
+## Unique Values in Categorical Features
+- customerID is an identifier and has been removed.
 
-## Feature Analysis
-- **Numeric Feature Basic Stats**:
-  - Mean, Median, Std, Min, Max for all numeric features.
-- **Skewness**:
-  - Examine each feature for skewness and potential transforms if needed.
+## Distribution of 'TotalCharges'
+- TotalCharges was converted from empty spaces to NaN and imputed with the median value.
 
-## Categorical Features
-- **Cardinality**: There are no categorical features present in the dataset.
-
-## Correlation Analysis
-- **Correlation Matrix**: Check for highly correlated features.
-- **Documentation of Features with High Correlation** with a documented threshold.
-
-## Feature-to-Target Relationship
-- **Pairs Analysis**: Analyze relationships without leaking target information.
+## Preprocessing Decisions
+- Remove 'customerID'.
+- Convert 'TotalCharges' empty spaces to NaN and impute using the median.

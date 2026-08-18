@@ -1,2 +1,3 @@
-run_id,timestamp,task_type,model_family,estimator,feature_configuration,preprocessing_summary,parameters,tuning_status,folds,primary_metric,CV_mean_std,holdout_metric,seed,notes
-1,2023-10-12,class,RandomForest,RandomForestClassifier,numeric,StandardScaler,{'random_state': 42},None,5,accuracy,0.7597,0.7597,42,Initial training with cleaned data.
+Run ID,Timestamp,Task Type,Model Family,Estimator,Feature Configuration,Preprocessing Summary,Parameters,Tuning Status,Folds,Primary Metric,CV Mean/Std,Secondary Metrics
+1,2023-10-01 00:00:00,Baseline,RandomForestClassifier,"RandomForestClassifier(random_state=42)",Feature set including all features,"Imputation and encoding for categorical; scaling for numeric","n/a","n/a",5,"F1","0.5431/0.0244","ROC AUC: 0.8216"
+2,2023-10-01 00:00:00,Tuning,RandomForestClassifier,"RandomForestClassifier(random_state=42)",Feature set including all features,"Imputation and encoding for categorical; scaling for numeric","Best parameters: {'classifier__n_estimators': 100, 'classifier__min_samples_split': 10, 'classifier__max_depth': 10}","n/a",5,"F1","0.5724/0.0234","n/a"

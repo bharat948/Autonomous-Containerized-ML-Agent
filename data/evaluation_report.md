@@ -1,10 +1,24 @@
-# Evaluation Report
+# Evaluation Report for Customer Churn Model
 
-## Experiment Overview
-This document summarizes the results of the experiment conducted to classify diabetes outcomes using a Random Forest model. 
+## Model Summary
+The model built is a Random Forest Classifier, optimized for predicting customer churn. The target variable is "Churn", which indicates whether a customer has left (Yes) or stayed (No).
 
 ## Model Performance
-- Accuracy on holdout set: **1.0 (100%)** 
+- **Hyperparameters:**  
+  - n_estimators: 100  
+  - min_samples_split: 10  
+  - max_depth: 10  
+
+### Metrics on Holdout Set
+- **Precision (No):** 0.84  
+- **Recall (No):** 0.90  
+- **F1-Score (No):** 0.87  
+- **Precision (Yes):** 0.66  
+- **Recall (Yes):** 0.52  
+- **F1-Score (Yes):** 0.59  
+- **Overall Accuracy:** 0.80  
+
+The model shows a good balance in predicting the majority class (No), but has room for improvement in predicting the minority class (Yes).
 
 ## Conclusion
-The model achieved perfect accuracy on the holdout dataset, indicating it may have learned the data well. Further investigation is advised to check for potential overfitting issues.
+The model is effective in predicting customer retention with a good F1 score and can be improved further with more parameter tuning or different model families.
